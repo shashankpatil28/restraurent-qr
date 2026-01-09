@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@theme {
+  /* This maps the HSL variables you have to Tailwind utility names */
+  --color-background: hsl(20 14.3% 95.9%);
+  --color-foreground: hsl(224 71.4% 4.1%);
+  
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(224 71.4% 4.1%);
+  
+  --color-primary: hsl(24.6 95% 53.1%);
+  --color-primary-foreground: hsl(60 9.1% 97.8%);
+  
+  --color-muted: hsl(240 4.8% 95.9%);
+  --color-muted-foreground: hsl(240 3.8% 46.1%);
+  
+  --color-border: hsl(240 5.9% 90%);
+  --color-input: hsl(240 5.9% 90%);
+  --color-ring: hsl(24.6 95% 53.1%);
+
+  --radius-lg: 0.5rem;
+  --radius-md: calc(0.5rem - 2px);
+  --radius-sm: calc(0.5rem - 4px);
+}
+
+/* @layer components {
+  .card-dash {
+    @apply bg-card text-card-foreground border border-border rounded-xl p-6 shadow-sm;
+  }
+} */

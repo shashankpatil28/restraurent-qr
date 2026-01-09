@@ -1,16 +1,25 @@
 import { prisma } from '../../utils/prisma';
 import { CreateOrderInput } from './order.types';
 import { ORDER_STATUS } from './order.constants';
-import { emitEvent } from '../../sockets';
-import { SOCKET_EVENTS } from '../../sockets/socket.events';
+import { emitEvent } from '../../socket/socket.events';
+import { SOCKET_EVENTS } from '../../socket/socket.events';
 
 export const createOrder = async (data: CreateOrderInput) => {
+  // 1. Verify Table exists
+  const table = await prisma.table.findUnique({ where: { id: data.tableId }});
+  if (!table || !table.isActive) throw new Error('Table is currently unavailable');
+
+  // 2. Fetch fresh prices from DB (Crucial Security Step)
   const menuItems = await prisma.menuItem.findMany({
     where: {
       id: { in: data.items.map(i => i.menuItemId) },
       isAvailable: true,
     },
   });
+
+  if (menuItems.length !== data.items.length) {
+    throw new Error('Some items are no longer available');
+  }
 
   if (menuItems.length !== data.items.length) {
     throw new Error('Invalid or unavailable menu items');
@@ -101,13 +110,14 @@ export const updateOrderStatus = async (
 
 export const getOrdersByTable = async (tableId: string) => {
   return prisma.order.findMany({
-    where: { tableId },
+    where: { 
+      tableId,
+      NOT: { status: 'PAID' } // Only show active orders to the customer
+    },
     orderBy: { createdAt: 'desc' },
     include: {
       orderItems: {
-        include: {
-          menuItem: true,
-        },
+        include: { menuItem: true },
       },
     },
   });

@@ -1,31 +1,29 @@
 import { Server } from 'ws';
-import { SOCKET_EVENTS } from './socket.events';
 
 let wss: Server | null = null;
 
 export const initSocketServer = (server: any) => {
   wss = new Server({ server });
 
-  wss.on('connection', (ws) => {
+  wss.on('connection', (ws: any) => {
+    ws.isAlive = true;
+    
+    // Setup pong listener
+    ws.on('pong', () => { ws.isAlive = true; });
+
     console.log('Admin WS connected');
+    
+    ws.on('close', () => console.log('Admin WS disconnected'));
+  });
 
-    ws.on('close', () => {
-      console.log('Admin WS disconnected');
+  // Check every 30 seconds if connection is still alive
+  const interval = setInterval(() => {
+    wss?.clients.forEach((ws: any) => {
+      if (ws.isAlive === false) return ws.terminate();
+      ws.isAlive = false;
+      ws.ping();
     });
-  });
-};
+  }, 30000);
 
-export const emitEvent = (event: string, payload: any) => {
-  if (!wss) return;
-
-  wss.clients.forEach((client: any) => {
-    if (client.readyState === 1) {
-      client.send(
-        JSON.stringify({
-          event,
-          payload,
-        })
-      );
-    }
-  });
+  wss.on('close', () => clearInterval(interval));
 };

@@ -1,36 +1,7 @@
 import { Router } from 'express';
-import * as menuController from './menu.controller';
-import { requireAuth } from '../../middlewares/auth.middleware';
-import { requireRole } from '../../middlewares/role.middleware';
+import * as authController from './auth.controller';
 
-export const menuRoutes = Router();
+export const authRoutes = Router();
 
-menuRoutes.get('/public', menuController.getPublicMenu);
-
-menuRoutes.post(
-  '/category',
-  requireAuth,
-  requireRole(['ADMIN']),
-  menuController.createCategory
-);
-
-menuRoutes.post(
-  '/item',
-  requireAuth,
-  requireRole(['ADMIN']),
-  menuController.createMenuItem
-);
-
-menuRoutes.patch(
-  '/item/:id',
-  requireAuth,
-  requireRole(['ADMIN']),
-  menuController.updateMenuItem
-);
-
-menuRoutes.delete(
-  '/item/:id',
-  requireAuth,
-  requireRole(['ADMIN']),
-  menuController.deleteMenuItem
-);
+authRoutes.post('/register', authController.registerAdmin);
+authRoutes.post('/login', authController.login);
