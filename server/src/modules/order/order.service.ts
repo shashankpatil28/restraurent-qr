@@ -1,7 +1,7 @@
 import { prisma } from '../../utils/prisma';
-import { CreateOrderInput } from './order.types';
+import { CreateOrderInput, UpdateOrderStatusInput } from './order.types';
 import { ORDER_STATUS } from './order.constants';
-import { emitEvent } from '../../socket/socket.events';
+import { emitEvent } from '../../socket';
 import { SOCKET_EVENTS } from '../../socket/socket.events';
 
 export const createOrder = async (data: CreateOrderInput) => {
@@ -9,29 +9,34 @@ export const createOrder = async (data: CreateOrderInput) => {
   const table = await prisma.table.findUnique({ where: { id: data.tableId }});
   if (!table || !table.isActive) throw new Error('Table is currently unavailable');
 
+  // Aggregate quantities for the same menu item and validate quantity
+  const itemQuantities = new Map<string, number>();
+  for (const item of data.items) {
+    if (!Number.isInteger(item.qty) || item.qty <= 0) {
+      throw new Error(`Invalid quantity for item ${item.menuItemId}`);
+    }
+    itemQuantities.set(
+      item.menuItemId,
+      (itemQuantities.get(item.menuItemId) || 0) + item.qty
+    );
+  }
+  const uniqueMenuItemIds = Array.from(itemQuantities.keys());
+
   // 2. Fetch fresh prices from DB (Crucial Security Step)
   const menuItems = await prisma.menuItem.findMany({
     where: {
-      id: { in: data.items.map(i => i.menuItemId) },
+      id: { in: uniqueMenuItemIds },
       isAvailable: true,
     },
   });
 
-  if (menuItems.length !== data.items.length) {
-    throw new Error('Some items are no longer available');
+  if (menuItems.length !== uniqueMenuItemIds.length) {
+    throw new Error('Some items are invalid or no longer available');
   }
 
-  if (menuItems.length !== data.items.length) {
-    throw new Error('Invalid or unavailable menu items');
-  }
-
-  const orderItems = data.items.map(item => {
-    const menuItem = menuItems.find(m => m.id === item.menuItemId)!;
-    return {
-      menuItemId: menuItem.id,
-      qty: item.qty,
-      price: menuItem.price,
-    };
+  const orderItems = menuItems.map(menuItem => {
+    const qty = itemQuantities.get(menuItem.id)!;
+    return { menuItemId: menuItem.id, qty, price: menuItem.price };
   });
 
   const totalAmount = orderItems.reduce(
@@ -92,7 +97,7 @@ export const getActiveOrders = async () => {
 
 export const updateOrderStatus = async (
   orderId: string,
-  status: string
+  status: UpdateOrderStatusInput['status']
 ) => {
   
   const updatedOrder = await prisma.order.update({
