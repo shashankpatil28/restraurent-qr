@@ -1,0 +1,23 @@
+
+@import "tw-animate-css";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:is(.dark *));
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 20 14.3% 4.1%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 14.3% 4.1%;
+    /* Add a soft cream/chocolate tint to secondary elements */
+    --secondary: 40 30% 96%; 
+    --primary: 20 40% 15%; /* Deep Coffee Color */
+    --radius: 0.75rem;
+  }
+}
